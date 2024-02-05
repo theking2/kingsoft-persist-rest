@@ -1,6 +1,6 @@
 {
     "name": "kingsoft/persist-rest",
-    "description": "REST interface fro Persis classes",
+    "description": "REST interface for \\Kingsoft\\Persist classes",
     "type": "library",
     "license": "MIT",
     "autoload": {
