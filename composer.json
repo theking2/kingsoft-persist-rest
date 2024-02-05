@@ -1,0 +1,23 @@
+{
+    "name": "kingsoft/persist-rest",
+    "description": "Make persistance easy and fast. Use it to store data in files, databases, or any other storage system. It's easy to use and extend.",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Kingsoft\\PersistRest\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "theking2",
+            "email": "theking2@king.ma"
+        }
+    ],
+    "minimum-stability": "RC",
+    "require": {
+        "kingsoft/http": "^3.5",
+        "kingsoft/persist": "^3.0",
+        "psr/log": "^3.0"
+    }
+}
