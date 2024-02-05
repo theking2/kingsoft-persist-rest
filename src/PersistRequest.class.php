@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace Kingsoft\Persist;
+namespace Kingsoft\PersistRest;
 
 use Kingsoft\Http\Request;
 
