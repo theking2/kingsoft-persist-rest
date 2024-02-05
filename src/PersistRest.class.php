@@ -1,8 +1,7 @@
 <?php declare(strict_types=1);
-namespace Kingsoft\Persist;
+namespace Kingsoft\PersistRest;
 
 use Kingsoft\Http\Response;
-use Kingsoft\Http\Request;
 use Kingsoft\Http\StatusCode;
 use Kingsoft\Http\ContentType;
 use Kingsoft\Http\Rest;
@@ -15,7 +14,7 @@ use Kingsoft\Persist\Base as PersistBase;
  * @return void
  * @throws \Exception, \InvalidArgumentException, \Kingsoft\DB\DatabaseException, \Kingsoft\Persist\RecordNotFoundException
  */
-class PersistDbRest extends Rest
+class PersistRest extends Rest
 {
   public function __construct( readonly PersistRequest $request )
   {
