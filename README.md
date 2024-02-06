@@ -27,11 +27,19 @@ maxresults = 10
 allowedorigin = *
 allowedmethods = "OPTIONS,HEAD,GET,POST,PUT,DELETE"
 maxage = 60
-
-# add allowedendpoints
+```
+# Add allowedendpoints
+## Kingsoft persist-db
+To create the allowed endpoints with `Kingsoft\Persist-db` generate them with
+`http://example.com/vendor/kingsoft/persist-db/src/discover/`
+Followed by these steps
+ * Copy the allowedendpoints settings to the ini file and
+ * Copy the psr-4 section to `composer.json`. After that make sure to reload the autoloader with
+```
+composer dump-autoload
 ```
 And to use pretty URLs a htacess
-```conf
+```apacheconf
 <FilesMatch "\.(?:ini|htaccess)$">
 Order allow,deny
 Deny from all
