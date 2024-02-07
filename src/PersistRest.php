@@ -164,7 +164,7 @@ class PersistRest extends Rest
         'links' => [
           'href' => (isset($_SERVER['HTTPS'])?'https://':'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . '/${id}',
         ],		  
-        'records' => $records
+        'resources' => $records
       ];
       Response::sendPayload( $payload ); //exits
     }
