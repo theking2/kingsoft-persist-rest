@@ -16,15 +16,16 @@ use Kingsoft\Persist\Base as PersistBase;
  */
 class PersistRest extends Rest
 {
-  public function __construct( readonly PersistRequest $request )
-  {
+  public function __construct(
+    readonly PersistRequest $request,
+    readonly ?\Psr\Log\LoggerInterface $logger = new \Psr\Log\NullLogger()
+  ) {
     try {
       parent::__construct( $request );
     } catch ( DatabaseException $e ) {
       Response::sendStatusCode( StatusCode::InternalServerError );
       Response::sendContentType( ContentType::Json );
       exit( $this->createExceptionBody( $e ) );
-
     }
   }
   /**
@@ -35,7 +36,7 @@ class PersistRest extends Rest
    */
   protected function createExceptionBody( \Throwable $e ): string
   {
-    LOG->debug( 'Exception', [ 'message' => $e->getMessage(), 'file' => $e->getFile(), '@' => $e->getLine() ] );
+    $this->logger->error( "Exception in PersistRest", [ 'exception' => $e->__toString() ] );
     // don't reveal internal errors
     if( $e instanceof Kingsoft\DB\DatabaseException ) {
       return json_encode( [ 
@@ -61,6 +62,7 @@ class PersistRest extends Rest
   protected function getResource(): PersistBase
   {
     if( !isset( $this->request->id ) ) {
+      $this->logger->info( "Id not set", [ 'ressource' => $this->request->resourceClass->__toString() ] );
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage( 'error', 0, 'No id provided' );
       exit;
@@ -69,6 +71,8 @@ class PersistRest extends Rest
       return $resourceObject;
 
     } else {
+      $this->logger->info( "Not found", [ 'ressource' => $this->request->resourceClass->__toString(), 'id' => $this->request->id ] );
+
       Response::sendStatusCode( StatusCode::NotFound );
       Response::sendMessage( 'error', 0, 'Not found' );
       exit;
@@ -97,6 +101,8 @@ class PersistRest extends Rest
        */
       $this->doGetAll();
     } catch ( \Exception $e ) {
+      $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resourceClass->__toString() ] );
+
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage(
         StatusCode::toString( StatusCode::BadRequest ),
@@ -208,6 +214,9 @@ class PersistRest extends Rest
         'ETag' => $resourceObject->getStateHash() ];
       Response::sendPayload( $payload, [ $resourceObject, "getStateHash" ] );
     }
+
+    $this->logger->info( "Error in post", [ 'payload' => $input ] );
+
     Response::sendStatusCode( StatusCode::InternalServerError );
     Response::sendMessage( 'error', 0, 'Internal error' );
   }
@@ -236,6 +245,9 @@ class PersistRest extends Rest
         Response::sendPayLoad( $payload, [ $obj, "getStateHash" ] );
 
       }
+
+      $this->logger->info( "Error in put", [ 'payload' => $input ] );
+
       Response::sendStatusCode( StatusCode::InternalServerError );
       Response::sendMessage( 'error', 0, 'Internal error' );
 
@@ -254,9 +266,9 @@ class PersistRest extends Rest
   public function delete(): void
   {
     /**@var \Kingsoft\Persist\Db\DBPersistTrait $obj */
-    if( $obj = $this->getResource() ) {
+    if( $resourceObject = $this->getResource() ) {
       Response::sendStatusCode( StatusCode::OK );
-      $payload = [ 'id' => $obj->getKeyValue(), 'result' => $obj->delete() ];
+      $payload = [ 'id' => $resourceObject->getKeyValue(), 'result' => $resourceObject->delete() ];
       Response::sendPayLoad( $payload );
     }
   }
