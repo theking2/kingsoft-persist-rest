@@ -65,7 +65,7 @@ class PersistRest extends Rest
       Response::sendMessage( 'error', 0, 'No id provided' );
       exit;
     }
-    if( $resourceObject = $this->request->resourceClass ->newInstance( $this->request->id ) and $resourceObject->isRecord() ) {
+    if( $resourceObject = $this->request->resourceClass->newInstance( $this->request->id ) and $resourceObject->isRecord() ) {
       return $resourceObject;
 
     } else {
@@ -97,7 +97,11 @@ class PersistRest extends Rest
        */
       $this->doGetAll();
     } catch ( \Exception $e ) {
-      LOG->error( 'Exception in GET', [ 'error' => $e->getMessage() ] );
+      Response::sendStatusCode( StatusCode::BadRequest );
+      Response::sendMessage(
+        StatusCode::toString( StatusCode::BadRequest ),
+        StatusCode::BadRequest->value,
+        "Could nor process request, {$e->getMessage()}" );
     }
   }
   /**
@@ -131,7 +135,7 @@ class PersistRest extends Rest
       $where[ $key ] = urldecode( $value );
     }
 
-    foreach( $this->request->resourceClass->getMethod("findall")->invoke(null, $where ) as $resourceObject ) {
+    foreach( $this->request->resourceClass->getMethod( "findall" )->invoke( null, $where ) as $resourceObject ) {
       if( !$row_count-- )
         break; // limit the number of rows returned (paging would be nice here) 
       $records[] = $resourceObject->getArrayCopy();
@@ -162,7 +166,7 @@ class PersistRest extends Rest
     $row_count = SETTINGS['api']['maxresults'] ?? 10;
     $partial   = false;
 
-    foreach( ( $this->request->resourceClass->getMethod("findall")->invoke(null) ) as $id => $resourceObject ) {
+    foreach( ( $this->request->resourceClass->getMethod( "findall" )->invoke( null ) ) as $id => $resourceObject ) {
       if( !$row_count-- ) {
         $partial = true;
         break; // limit the number of rows returned (paging would be nice here) 
@@ -194,7 +198,7 @@ class PersistRest extends Rest
     $input = json_decode( file_get_contents( 'php://input' ), true );
 
     /** @var \Kingsoft\Persist\Base $obj */
-    $resourceObject = $this->request->resourceClass->getMethod("createFromArray")->invoke( null, $input );
+    $resourceObject = $this->request->resourceClass->getMethod( "createFromArray" )->invoke( null, $input );
     if( $resourceObject->freeze() ) {
       Response::sendStatusCode( StatusCode::OK );
       $payload = [ 
