@@ -62,7 +62,7 @@ class PersistRest extends Rest
   protected function getResource(): PersistBase
   {
     if( !isset( $this->request->id ) ) {
-      $this->logger->info( "Id not set", [ 'ressource' => $this->request->resourceClass->__toString() ] );
+      $this->logger->info( "Id not set", [ 'ressource' => $this->request->resource ] );
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage( 'error', 0, 'No id provided' );
       exit;
@@ -71,14 +71,14 @@ class PersistRest extends Rest
       return $resourceObject;
 
     } else {
-      $this->logger->info( "Not found", [ 'ressource' => $this->request->resourceClass->__toString(), 'id' => $this->request->id??'' ] );
+      $this->logger->info( "Not found", [ 'ressource' => $this->request->resource, 'id' => $this->request->id??'' ] );
 
       Response::sendStatusCode( StatusCode::NotFound );
       Response::sendContentType( ContentType::Json );
       $payload = [
         'result' => 'error',
         'message' => 'Resource not found',
-        'resource' => $this->request->resourceClass->getName(),
+        'resource' => $this->request->resource,
         'id' => $this->request->id??'?',
       ];
       Response::sendPayload( $payload );
@@ -107,7 +107,7 @@ class PersistRest extends Rest
        */
       $this->doGetAll();
     } catch ( \Exception $e ) {
-      $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resourceClass->__toString() ] );
+      $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage(
@@ -123,10 +123,10 @@ class PersistRest extends Rest
    */
   function doGetOne(): void
   {
-    if( $obj = $this->getResource() ) {
+    if( $resourceObject = $this->getResource() ) {
       Response::sendStatusCode( StatusCode::OK );
-      $payload = $obj->getArrayCopy();
-      Response::sendPayload( $payload, [ $obj, "getStateHash" ] );
+      $payload = $resourceObject->getArrayCopy();
+      Response::sendPayload( $payload, [ $resourceObject, "getStateHash" ] );
     }
 
   }
@@ -136,20 +136,18 @@ class PersistRest extends Rest
    * @return void
    * @throws \Exception, \InvalidArgumentException, \Kingsoft\DB\DatabaseException, \Kingsoft\Persist\RecordNotFoundException
    */
-  function doGetMany(): void
+  function getResourceList(\Generator $resourceGenerator ): void
   {
     $records   = [];
     $keys      = [];
     $row_count = SETTINGS['api']['maxresults'] ?? 10;
 
-    $where = [];
-    foreach( $this->request->query as $key => $value ) {
-      $where[ $key ] = urldecode( $value );
-    }
-
-    foreach( $this->request->resourceClass->getMethod( "findall" )->invoke( null, $where ) as $resourceObject ) {
-      if( !$row_count-- )
+    $truncated = false;
+    foreach( $resourceGenerator as $resourceObject ) {
+      if( !$row_count-- ) {
+        $truncated = true;
         break; // limit the number of rows returned (paging would be nice here) 
+      }
       $records[] = $resourceObject->getArrayCopy();
       $keys[]    = $resourceObject->getKeyValue();
     }
@@ -157,43 +155,44 @@ class PersistRest extends Rest
     if( count( $keys ) ) {
       Response::sendStatusCode( StatusCode::OK );
       // Here we should allow for paging
-      header( 'Content-Range: ID ' . $keys[0] . '-' . $keys[ count( $keys ) - 1 ] );
-      Response::sendPayload( $records );
+      header( 'Content-Range: keys ' . $keys[0] . '-' . $keys[ count( $keys ) - 1 ] );
+      $payload = [
+        'truncated' => $truncated,
+        'first' => $keys[0],
+        'last' => $keys[ count( $keys ) - 1 ],
+        'count' => count( $keys ),
+        'links' => [
+          'href' => (isset($_SERVER['HTTPS'])?'https://':'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . '/${id}',
+        ],		  
+        'resources' => $records
+      ];
+      Response::sendPayload( $payload ); //exits
     }
 
     Response::sendStatusCode( StatusCode::NoContent );
-    exit();
+    $payload = [ 'result' => 'none', 'message' => 'No records found' ];
+    Response::sendPayload( $payload ); //exits
+  }  
+  /**
+   * dogetMany - get multiple records by criteria up to MAXROWS
+   *
+   * @return void
+   */
+  private function dogetMany() {
+    $where = [];
+    foreach( $this->request->query as $key => $value ) {
+      $where[ $key ] = urldecode( $value );
+    }
+    $this->getResourceList( $this->request->resourceClass->getMethod( "findall" )->invoke( null, $where ) );
   }
-
   /**
    * Get all records up to MAXROWS
    *
    * @return void
-   * @throws \Exception, \InvalidArgumentException, \Kingsoft\DB\DatabaseException, \Kingsoft\Persist\RecordNotFoundException
    */
   function doGetAll(): void
   {
-    $records   = [];
-    $keys      = [];
-    $row_count = SETTINGS['api']['maxresults'] ?? 10;
-    $partial   = false;
-
-    foreach( ( $this->request->resourceClass->getMethod( "findall" )->invoke( null ) ) as $id => $resourceObject ) {
-      if( !$row_count-- ) {
-        $partial = true;
-        break; // limit the number of rows returned (paging would be nice here) 
-      }
-      $records[] = $resourceObject->getArrayCopy();
-      $keys[]    = $resourceObject->getKeyValue();
-    }
-    if( count( $keys ) ) {
-      Response::sendStatusCode( $partial ? StatusCode::PartialContent : StatusCode::OK );
-      // Here we should allow for paging
-      header( 'Content-Range: ID ' . $keys[0] . '-' . $keys[ count( $keys ) - 1 ] );
-      Response::sendPayload( $records );
-    }
-    Response::sendStatusCode( StatusCode::NoContent );
-    exit();
+    $this->getResourceList( $this->request->resourceClass->getMethod( "findall" )->invoke( null ) );
   }
   /* #endregion */
 
@@ -209,7 +208,7 @@ class PersistRest extends Rest
   {
     $input = json_decode( file_get_contents( 'php://input' ), true );
 
-    /** @var \Kingsoft\Persist\Base $obj */
+    /** @var \Kingsoft\Persist\Base $resourceObject */
     $resourceObject = $this->request->resourceClass->getMethod( "createFromArray" )->invoke( null, $input );
     if( $resourceObject->freeze() ) {
       Response::sendStatusCode( StatusCode::OK );
@@ -239,16 +238,16 @@ class PersistRest extends Rest
    */
   public function put(): void
   {
-    /** @var \Kingsoft\Persist\Base $obj */
-    if( $obj = $this->getResource() ) {
+    /** @var \Kingsoft\Persist\Base $resourceObject */
+    if( $resourceObject = $this->getResource() ) {
 
       $input = json_decode( file_get_contents( 'php://input' ), true );
-      $obj->setFromArray( $input );
+      $resourceObject->setFromArray( $input );
 
-      if( $result = $obj->freeze() ) {
+      if( $result = $resourceObject->freeze() ) {
         Response::sendStatusCode( StatusCode::OK );
-        $payload = [ 'id' => $obj->getKeyValue(), 'result' => $result ];
-        Response::sendPayLoad( $payload, [ $obj, "getStateHash" ] );
+        $payload = [ 'id' => $resourceObject->getKeyValue(), 'result' => $result ];
+        Response::sendPayLoad( $payload, [ $resourceObject, "getStateHash" ] );
 
       }
 
@@ -271,7 +270,7 @@ class PersistRest extends Rest
    */
   public function delete(): void
   {
-    /**@var \Kingsoft\Persist\Db\DBPersistTrait $obj */
+    /**@var \Kingsoft\Persist\Db\DBPersistTrait $resourceObject */
     if( $resourceObject = $this->getResource() ) {
       Response::sendStatusCode( StatusCode::OK );
       $payload = [ 'id' => $resourceObject->getKeyValue(), 'result' => $resourceObject->delete() ];
@@ -291,14 +290,14 @@ class PersistRest extends Rest
    */
   public function head(): void
   {
-    if( $obj = $this->getResource() ) {
+    if( $resourceObject = $this->getResource() ) {
       $null = null;
-      if( isset( $_SERVER['HTTP_IF_NONE_MATCH'] ) and $_SERVER['HTTP_IF_NONE_MATCH'] == $obj->getStateHash() ) {
+      if( isset( $_SERVER['HTTP_IF_NONE_MATCH'] ) and $_SERVER['HTTP_IF_NONE_MATCH'] == $resourceObject->getStateHash() ) {
         Response::sendStatusCode( StatusCode::NotModified );
-        Response::sendPayload( $null, [ $obj, "getStateHash" ] );
+        Response::sendPayload( $null, [ $resourceObject, "getStateHash" ] );
       }
       Response::sendStatusCode( StatusCode::NoContent );
-      Response::sendPayload( $null, [ $obj, "getStateHash" ] );
+      Response::sendPayload( $null, [ $resourceObject, "getStateHash" ] );
     }
     Response::sendStatusCode( StatusCode::NotFound );
     exit();
