@@ -71,11 +71,17 @@ class PersistRest extends Rest
       return $resourceObject;
 
     } else {
-      $this->logger->info( "Not found", [ 'ressource' => $this->request->resourceClass->__toString(), 'id' => $this->request->id ] );
+      $this->logger->info( "Not found", [ 'ressource' => $this->request->resourceClass->__toString(), 'id' => $this->request->id??'' ] );
 
       Response::sendStatusCode( StatusCode::NotFound );
-      Response::sendMessage( 'error', 0, 'Not found' );
-      exit;
+      Response::sendContentType( ContentType::Json );
+      $payload = [
+        'result' => 'error',
+        'message' => 'Resource not found',
+        'resource' => $this->request->resourceClass->getName(),
+        'id' => $this->request->id??'?',
+      ];
+      Response::sendPayload( $payload );
     }
   }
   /* #region GET */
