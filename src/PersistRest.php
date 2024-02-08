@@ -153,20 +153,26 @@ class PersistRest extends Rest
     }
 
     if( count( $keys ) ) {
+      $count = count( $keys );
       Response::sendStatusCode( StatusCode::OK );
       // Here we should allow for paging
-      header( 'Content-Range: keys ' . $keys[0] . '-' . $keys[ count( $keys ) - 1 ] );
+      header( 'Content-Range: keys ' . $keys[0] . '-' . $keys[ $count - 1 ] );
       $payload = [
         'partial' => $partial,
         'first' => $keys[0],
-        'last' => $keys[ count( $keys ) - 1 ],
+        'last' => $keys[ $count - 1 ],
         'count' => count( $keys ),
         'links' => [
-          {
+          [
             'name' => 'single',
             'href' => (isset($_SERVER['HTTPS'])?'https://':'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . '/${id}',
-            'method => 'GET'
-          }
+            'method' => 'GET'
+          ],
+          [
+            'name' => 'next-page',
+            'href' => (isset($_SERVER['HTTPS'])?'https://':'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . "[{$count}]",
+            'method' => 'GET'
+          ]
         ],
         'resources' => $records
       ];
