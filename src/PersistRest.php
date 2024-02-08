@@ -142,10 +142,10 @@ class PersistRest extends Rest
     $keys      = [];
     $row_count = SETTINGS['api']['maxresults'] ?? 10;
 
-    $truncated = false;
+    $partial = false;
     foreach( $resourceGenerator as $resourceObject ) {
       if( !$row_count-- ) {
-        $truncated = true;
+        $partial = true;
         break; // limit the number of rows returned (paging would be nice here) 
       }
       $records[] = $resourceObject->getArrayCopy();
@@ -157,13 +157,17 @@ class PersistRest extends Rest
       // Here we should allow for paging
       header( 'Content-Range: keys ' . $keys[0] . '-' . $keys[ count( $keys ) - 1 ] );
       $payload = [
-        'truncated' => $truncated,
+        'partial' => $partial,
         'first' => $keys[0],
         'last' => $keys[ count( $keys ) - 1 ],
         'count' => count( $keys ),
         'links' => [
-          'href' => (isset($_SERVER['HTTPS'])?'https://':'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . '/${id}',
-        ],		  
+          {
+            'name' => 'single',
+            'href' => (isset($_SERVER['HTTPS'])?'https://':'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . '/${id}',
+            'method => 'GET'
+          }
+        ],
         'resources' => $records
       ];
       Response::sendPayload( $payload ); //exits
