@@ -40,17 +40,17 @@ class PersistRequest extends Request
     }
     // test the resource
     try {
-      $this->resourceClass = new \ReflectionClass(
-        $this->getNamespace() . '\\' .
-        $this->resource
+      $fullyQualifiedResourceClass = '\\' . $this->getNamespace() . '\\' . $this->resource;
+      $this->resourceClass         = new \ReflectionClass(
+        $fullyQualifiedResourceClass
       );
-      $resourceInstance    = $this->resourceClass->newInstance();
+      $resourceInstance            = $this->resourceClass->newInstance();
       unset( $resourceInstance );
-      $this->log->debug( 'Successful instantiated resourceObject', [ 'resource' => $this->resource ] );
+      $this->log->debug( 'Instantiated resourceObject successful', [ 'resource' => $fullyQualifiedResourceClass ] );
       return true;
 
     } catch ( \Exception $e ) {
-      $this->log->info( 'Could not instansiate resourceObject', [ 'resource' => $this->resource ] );
+      $this->log->info( 'Instantiate resourceObject failure', [ 'resource' => $fullyQualifiedResourceClass, 'error' => $e->getMessage() ] );
       return false;
 
     }
