@@ -62,10 +62,10 @@ class PersistRest extends Rest
   protected function getResource(): PersistBase
   {
     if( !isset( $this->request->id ) ) {
-      $this->logger->info( "No id provided", [ 'ressource' => $this->request->resource ] );
+      $this->logger->info( "Id not set", [ 'ressource' => $this->request->resource ] );
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage( 'error', 0, 'No id provided' );
-      trigger_error( "No id provided" );
+      trigger_error( "no id" );
     }
     if( $resourceObject = $this->request->resourceClass->newInstance( $this->request->id ) and $resourceObject->isRecord() ) {
       return $resourceObject;
@@ -144,12 +144,13 @@ class PersistRest extends Rest
     if( $this->request->limit > 0 ) {
       $row_count = $this->request->limit;
     }
-    $offset = $this->request->offset;
+    $offset  = $this->request->offset;
+    $partial = false;
 
     foreach( $resourceGenerator as $resourceObject ) {
       // Skip until offset
       if( ( $offset-- ) > 0 ) {
-        $this->logger->debug('skipping...', ['offset'=>$offset]);
+        $this->logger->debug( 'skipping...', [ 'offset' => $offset ] );
         continue;
       }
       if( !$row_count-- ) {
@@ -167,6 +168,15 @@ class PersistRest extends Rest
       header( 'Content-Range: keys ' . $keys[0] . '-' . $keys[ $count - 1 ] );
       $nextPageOffset = $this->request->offset + $this->request->limit;
       $prevPageOffset = $this->request->offset - $this->request->limit;
+      $queryArray     = [];
+      foreach( $this->request->query as $field => $constraint ) {
+        $queryArray[] = $field . '=' . substr( $constraint, 1 );
+      }
+
+      $query = implode( '&', $queryArray );
+      if( $query ) {
+        $query = '?' . $query;
+      }
       $payload = [ 
         'partial' => $partial,
         'first' => $keys[0],
@@ -180,12 +190,12 @@ class PersistRest extends Rest
           ],
           [ 
             'name' => 'prev-page',
-            'href' => ( isset( $_SERVER['HTTPS'] ) ? 'https://' : 'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . "[{$prevPageOffset},{$count}]",
+            'href' => ( isset( $_SERVER['HTTPS'] ) ? 'https://' : 'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . "[{$prevPageOffset},{$count}]" . $query,
             'method' => 'GET'
           ],
           [ 
             'name' => 'next-page',
-            'href' => ( isset( $_SERVER['HTTPS'] ) ? 'https://' : 'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . "[{$nextPageOffset},{$count}]",
+            'href' => ( isset( $_SERVER['HTTPS'] ) ? 'https://' : 'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . "[{$nextPageOffset},{$count}]" . $query,
             'method' => 'GET'
           ]
         ],
