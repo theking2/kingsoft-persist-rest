@@ -21,7 +21,7 @@ class PersistRest extends Rest
     readonly ?\Psr\Log\LoggerInterface $logger = new \Psr\Log\NullLogger()
   ) {
     try {
-      parent::__construct( $request );
+      parent::__construct( $request, $logger );
     } catch ( DatabaseException $e ) {
       Response::sendStatusCode( StatusCode::InternalServerError );
       Response::sendContentType( ContentType::Json );
@@ -62,24 +62,24 @@ class PersistRest extends Rest
   protected function getResource(): PersistBase
   {
     if( !isset( $this->request->id ) ) {
-      $this->logger->info( "Id not set", [ 'ressource' => $this->request->resource ] );
+      $this->logger->info( "No id provided", [ 'ressource' => $this->request->resource ] );
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage( 'error', 0, 'No id provided' );
-      exit;
+      trigger_error( "No id provided" );
     }
     if( $resourceObject = $this->request->resourceClass->newInstance( $this->request->id ) and $resourceObject->isRecord() ) {
       return $resourceObject;
 
     } else {
-      $this->logger->info( "Not found", [ 'ressource' => $this->request->resource, 'id' => $this->request->id??'' ] );
+      $this->logger->info( "Not found", [ 'ressource' => $this->request->resource, 'id' => $this->request->id ?? '' ] );
 
       Response::sendStatusCode( StatusCode::NotFound );
       Response::sendContentType( ContentType::Json );
-      $payload = [
+      $payload = [ 
         'result' => 'error',
         'message' => 'Resource not found',
         'resource' => $this->request->resource,
-        'id' => $this->request->id??'?',
+        'id' => $this->request->id ?? '?',
       ];
       Response::sendPayload( $payload );
     }
@@ -136,14 +136,22 @@ class PersistRest extends Rest
    * @return void
    * @throws \Exception, \InvalidArgumentException, \Kingsoft\DB\DatabaseException, \Kingsoft\Persist\RecordNotFoundException
    */
-  function getResourceList(\Generator $resourceGenerator ): void
+  function getResourceList( \Generator $resourceGenerator ): void
   {
     $records   = [];
     $keys      = [];
     $row_count = SETTINGS['api']['maxresults'] ?? 10;
+    if( $this->request->limit > 0 ) {
+      $row_count = $this->request->limit;
+    }
+    $offset = $this->request->offset;
 
-    $partial = false;
     foreach( $resourceGenerator as $resourceObject ) {
+      // Skip until offset
+      if( ( $offset-- ) > 0 ) {
+        $this->logger->debug('skipping...', ['offset'=>$offset]);
+        continue;
+      }
       if( !$row_count-- ) {
         $partial = true;
         break; // limit the number of rows returned (paging would be nice here) 
@@ -157,20 +165,27 @@ class PersistRest extends Rest
       Response::sendStatusCode( StatusCode::OK );
       // Here we should allow for paging
       header( 'Content-Range: keys ' . $keys[0] . '-' . $keys[ $count - 1 ] );
-      $payload = [
+      $nextPageOffset = $this->request->offset + $this->request->limit;
+      $prevPageOffset = $this->request->offset - $this->request->limit;
+      $payload = [ 
         'partial' => $partial,
         'first' => $keys[0],
         'last' => $keys[ $count - 1 ],
         'count' => count( $keys ),
-        'links' => [
-          [
+        'links' => [ 
+          [ 
             'name' => 'single',
-            'href' => (isset($_SERVER['HTTPS'])?'https://':'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . '/${id}',
+            'href' => ( isset( $_SERVER['HTTPS'] ) ? 'https://' : 'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . '/${id}',
             'method' => 'GET'
           ],
-          [
+          [ 
+            'name' => 'prev-page',
+            'href' => ( isset( $_SERVER['HTTPS'] ) ? 'https://' : 'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . "[{$prevPageOffset},{$count}]",
+            'method' => 'GET'
+          ],
+          [ 
             'name' => 'next-page',
-            'href' => (isset($_SERVER['HTTPS'])?'https://':'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . "[{$count}]",
+            'href' => ( isset( $_SERVER['HTTPS'] ) ? 'https://' : 'http://' ) . $_SERVER['SERVER_NAME'] . '/' . $this->request->resource . "[{$nextPageOffset},{$count}]",
             'method' => 'GET'
           ]
         ],
@@ -182,18 +197,19 @@ class PersistRest extends Rest
     Response::sendStatusCode( StatusCode::NoContent );
     $payload = [ 'result' => 'none', 'message' => 'No records found' ];
     Response::sendPayload( $payload ); //exits
-  }  
+  }
   /**
    * dogetMany - get multiple records by criteria up to MAXROWS
    *
    * @return void
    */
-  private function dogetMany() {
+  private function dogetMany()
+  {
     $where = [];
     foreach( $this->request->query as $key => $value ) {
       $where[ $key ] = urldecode( $value );
     }
-    $this->getResourceList( $this->request->resourceClass->getMethod( "findall" )->invoke( null, $where ) );
+    $this->getResourceList( $this->request->resourceClass->getMethod( "findall" )->invoke( null, $where, ) );
   }
   /**
    * Get all records up to MAXROWS
