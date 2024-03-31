@@ -1,10 +1,7 @@
 <?php declare(strict_types=1);
 namespace Kingsoft\PersistRest;
 
-use Kingsoft\Http\Response;
-use Kingsoft\Http\StatusCode;
-use Kingsoft\Http\ContentType;
-use Kingsoft\Http\Rest;
+use Kingsoft\Http\{ Response, Request, StatusCode, ContentType, Rest };
 use Kingsoft\Db\DatabaseException;
 use Kingsoft\Persist\Base as PersistBase;
 
@@ -17,11 +14,11 @@ use Kingsoft\Persist\Base as PersistBase;
 class PersistRest extends Rest
 {
   public function __construct(
-    readonly PersistRequest $request,
-    readonly ?\Psr\Log\LoggerInterface $logger = new \Psr\Log\NullLogger()
+    PersistRequest $request,
+    readonly \Psr\Log\LoggerInterface $log = new \Psr\Log\NullLogger()
   ) {
     try {
-      parent::__construct( $request, $logger );
+      parent::__construct( $request );
     } catch ( DatabaseException $e ) {
       Response::sendStatusCode( StatusCode::InternalServerError );
       Response::sendContentType( ContentType::Json );
@@ -36,7 +33,7 @@ class PersistRest extends Rest
    */
   protected function createExceptionBody( \Throwable $e ): string
   {
-    $this->logger->error( "Exception in PersistRest", [ 'exception' => $e->__toString() ] );
+    $this->log->error( "Exception in PersistRest", [ 'exception' => $e->__toString() ] );
     // don't reveal internal errors
     if( $e instanceof Kingsoft\DB\DatabaseException ) {
       return json_encode( [ 
@@ -55,23 +52,24 @@ class PersistRest extends Rest
   }
   /**
    * Get a resource by id
-   * @return \Kingsoft\Persist\Base
+   * @return PersistBase
    * @throws \Exception, \InvalidArgumentException, \Kingsoft\DB\DatabaseException, \Kingsoft\Persist\RecordNotFoundException
    * side effect: sends a response and exits if the resource is not found
    */
   protected function getResource(): PersistBase
   {
     if( !isset( $this->request->id ) ) {
-      $this->logger->info( "Id not set", [ 'ressource' => $this->request->resource ] );
+      $this->log->info( "Id not set", [ 'ressource' => $this->request->resource ] );
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage( 'error', 0, 'No id provided' );
       trigger_error( "no id" );
+      exit();
     }
     if( $resourceObject = $this->request->resourceClass->newInstance( $this->request->id ) and $resourceObject->isRecord() ) {
       return $resourceObject;
 
     } else {
-      $this->logger->info( "Not found", [ 'ressource' => $this->request->resource, 'id' => $this->request->id ?? '' ] );
+      $this->log->info( "Not found", [ 'ressource' => $this->request->resource, 'id' => $this->request->id ?? '' ] );
 
       Response::sendStatusCode( StatusCode::NotFound );
       Response::sendContentType( ContentType::Json );
@@ -82,6 +80,7 @@ class PersistRest extends Rest
         'id' => $this->request->id ?? '?',
       ];
       Response::sendPayload( $payload );
+      exit();
     }
   }
   /* #region GET */
@@ -107,7 +106,7 @@ class PersistRest extends Rest
        */
       $this->doGetAll();
     } catch ( \Exception $e ) {
-      $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
+      $this->log->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage(
@@ -150,7 +149,7 @@ class PersistRest extends Rest
     foreach( $resourceGenerator as $resourceObject ) {
       // Skip until offset
       if( ( $offset-- ) > 0 ) {
-        $this->logger->debug( 'skipping...', [ 'offset' => $offset ] );
+        $this->log->debug( 'skipping...', [ 'offset' => $offset ] );
         continue;
       }
       if( !$row_count-- ) {
@@ -172,6 +171,7 @@ class PersistRest extends Rest
       foreach( $this->request->query as $field => $constraint ) {
         $queryArray[] = $field . '=' . substr( $constraint, 1 );
       }
+      $this->log->debug( 'Query', [ 'queryArray' => $queryArray ] );
 
       $query = implode( '&', $queryArray );
       if( $query ) {
@@ -256,7 +256,7 @@ class PersistRest extends Rest
       Response::sendPayload( $payload, [ $resourceObject, "getStateHash" ] );
     }
 
-    $this->logger->info( "Error in post", [ 'payload' => $input ] );
+    $this->log->info( "Error in post", [ 'payload' => $input ] );
 
     Response::sendStatusCode( StatusCode::InternalServerError );
     Response::sendMessage( 'error', 0, 'Internal error' );
@@ -287,7 +287,7 @@ class PersistRest extends Rest
 
       }
 
-      $this->logger->info( "Error in put", [ 'payload' => $input ] );
+      $this->log->info( "Error in put", [ 'payload' => $input ] );
 
       Response::sendStatusCode( StatusCode::InternalServerError );
       Response::sendMessage( 'error', 0, 'Internal error' );

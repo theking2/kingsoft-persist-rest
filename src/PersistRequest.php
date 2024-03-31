@@ -19,19 +19,14 @@ class PersistRequest extends Request
 
   public function __construct(
     array $allowedEndpoints,
-    ?string $allowedMethods = 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
-    ?string $allowedOrigin = '*',
-    ?int $maxAge = 86400,
-    ?\Psr\Log\LoggerInterface $log = new \Psr\Log\NullLogger(),
+    string $allowedMethods = 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
+    string $allowedOrigin = '*'
   ) {
     parent::__construct(
       $allowedEndpoints,
       $allowedMethods,
       $allowedOrigin,
-      300,
-      $log
     );
-
   }
   protected function isResourceValid(): bool
   {
@@ -47,12 +42,13 @@ class PersistRequest extends Request
       $resourceInstance            = $this->resourceClass->newInstance();
       unset( $resourceInstance );
       $this->log->debug( 'Instantiated resourceObject successful', [ 'resource' => $fullyQualifiedResourceClass ] );
+
       return true;
 
     } catch ( \Exception $e ) {
       $this->log->info( 'Instantiate resourceObject failure', [ 'resource' => $fullyQualifiedResourceClass, 'error' => $e->getMessage() ] );
-      return false;
 
+      return false;
     }
   }
 }
