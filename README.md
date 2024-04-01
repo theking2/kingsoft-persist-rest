@@ -1,18 +1,18 @@
 ## Sample usage
 ```php
-use Kingsoft\Http\StatusCode;
-use Kingsoft\PersistRest\PersistRest;
-use Kingsoft\PersistRest\PersistRequest;
-use Kingsoft\Http\Response;
+
+use Kingsoft\Http\{StatusCode, Response};
+use Kingsoft\PersistRest\{PersistRest, PersistRequest};
 
 try {
   $request = new PersistRequest(
-    SETTINGS['api']['allowedendpoints'],
-    SETTINGS['api']['allowedmethods'],
-    SETTINGS['api']['allowedorigin'],
-    (int) SETTINGS['api']['maxage']
+    ['Test', 'TestView'],
+    "GET, POST",
+    "client.example.com",
   );
-  $api = new PersistRest( $request );
+  $request->setLogger( LOG );
+  $api = new PersistRest( $request, LOG );
+  $api->handleRequest();
 } catch ( Exception $e ) {
   Response::sendError( $e->getMessage(), StatusCode::InternalServerError->value );
 }
