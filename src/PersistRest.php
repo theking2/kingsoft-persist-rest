@@ -1,7 +1,7 @@
 <?php declare(strict_types=1);
 namespace Kingsoft\PersistRest;
 
-use Kingsoft\Http\{ Response, Request, StatusCode, ContentType, Rest };
+use Kingsoft\Http\{Response, Request, StatusCode, ContentType, Rest};
 use Kingsoft\Db\DatabaseException;
 use Kingsoft\Persist\Base as PersistBase;
 
@@ -15,15 +15,9 @@ class PersistRest extends Rest
 {
   public function __construct(
     PersistRequest $request,
-    readonly \Psr\Log\LoggerInterface $log = new \Psr\Log\NullLogger()
+    \Psr\Log\LoggerInterface $logger
   ) {
-    try {
-      parent::__construct( $request );
-    } catch ( DatabaseException $e ) {
-      Response::sendStatusCode( StatusCode::InternalServerError );
-      Response::sendContentType( ContentType::Json );
-      exit( $this->createExceptionBody( $e ) );
-    }
+    parent::__construct( $request, $logger );
   }
   /**
    * Create a JSON string from an exception
@@ -33,7 +27,7 @@ class PersistRest extends Rest
    */
   protected function createExceptionBody( \Throwable $e ): string
   {
-    $this->log->error( "Exception in PersistRest", [ 'exception' => $e->__toString() ] );
+    $this->logger->error( "Exception in PersistRest", [ 'exception' => $e->__toString() ] );
     // don't reveal internal errors
     if( $e instanceof Kingsoft\DB\DatabaseException ) {
       return json_encode( [ 
@@ -59,7 +53,7 @@ class PersistRest extends Rest
   protected function getResource(): PersistBase
   {
     if( !isset( $this->request->id ) ) {
-      $this->log->info( "Id not set", [ 'ressource' => $this->request->resource ] );
+      $this->logger->info( "Id not set", [ 'ressource' => $this->request->resource ] );
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage( 'error', 0, 'No id provided' );
       trigger_error( "no id" );
@@ -69,7 +63,7 @@ class PersistRest extends Rest
       return $resourceObject;
 
     } else {
-      $this->log->info( "Not found", [ 'ressource' => $this->request->resource, 'id' => $this->request->id ?? '' ] );
+      $this->logger->info( "Not found", [ 'ressource' => $this->request->resource, 'id' => $this->request->id ?? '' ] );
 
       Response::sendStatusCode( StatusCode::NotFound );
       Response::sendContentType( ContentType::Json );
@@ -106,7 +100,7 @@ class PersistRest extends Rest
        */
       $this->doGetAll();
     } catch ( \Exception $e ) {
-      $this->log->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
+      $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage(
@@ -149,7 +143,7 @@ class PersistRest extends Rest
     foreach( $resourceGenerator as $resourceObject ) {
       // Skip until offset
       if( ( $offset-- ) > 0 ) {
-        $this->log->debug( 'skipping...', [ 'offset' => $offset ] );
+        $this->logger->debug( 'skipping...', [ 'offset' => $offset ] );
         continue;
       }
       if( !$row_count-- ) {
@@ -171,7 +165,7 @@ class PersistRest extends Rest
       foreach( $this->request->query as $field => $constraint ) {
         $queryArray[] = $field . '=' . substr( $constraint, 1 );
       }
-      $this->log->debug( 'Query', [ 'queryArray' => $queryArray ] );
+      $this->logger->debug( 'Query', [ 'queryArray' => $queryArray ] );
 
       $query = implode( '&', $queryArray );
       if( $query ) {
@@ -256,7 +250,7 @@ class PersistRest extends Rest
       Response::sendPayload( $payload, [ $resourceObject, "getStateHash" ] );
     }
 
-    $this->log->info( "Error in post", [ 'payload' => $input ] );
+    $this->logger->info( "Error in post", [ 'payload' => $input ] );
 
     Response::sendStatusCode( StatusCode::InternalServerError );
     Response::sendMessage( 'error', 0, 'Internal error' );
@@ -287,7 +281,7 @@ class PersistRest extends Rest
 
       }
 
-      $this->log->info( "Error in put", [ 'payload' => $input ] );
+      $this->logger->info( "Error in put", [ 'payload' => $input ] );
 
       Response::sendStatusCode( StatusCode::InternalServerError );
       Response::sendMessage( 'error', 0, 'Internal error' );
