@@ -41,12 +41,12 @@ readonly class PersistRequest extends Request
       );
       $resourceInstance            = $this->resourceClass->newInstance();
       unset( $resourceInstance );
-      $this->log->debug( 'Instantiated resourceObject successful', [ 'resource' => $fullyQualifiedResourceClass ] );
+      $this->logger->debug( 'Instantiated resourceObject successful', [ 'resource' => $fullyQualifiedResourceClass ] );
 
       return true;
 
     } catch ( \Exception $e ) {
-      $this->log->info( 'Instantiate resourceObject failure', [ 'resource' => $fullyQualifiedResourceClass, 'error' => $e->getMessage() ] );
+      $this->logger->info( 'Instantiate resourceObject failure', [ 'resource' => $fullyQualifiedResourceClass, 'error' => $e->getMessage() ] );
 
       return false;
     }
