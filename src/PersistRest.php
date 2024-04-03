@@ -2,7 +2,6 @@
 namespace Kingsoft\PersistRest;
 
 use Kingsoft\Http\{Response, Request, StatusCode, ContentType, Rest};
-use Kingsoft\Db\DatabaseException;
 use Kingsoft\Persist\Base as PersistBase;
 
 /**
@@ -11,7 +10,7 @@ use Kingsoft\Persist\Base as PersistBase;
  * @return void
  * @throws \Exception, \InvalidArgumentException, \Kingsoft\DB\DatabaseException, \Kingsoft\Persist\RecordNotFoundException
  */
-class PersistRest extends Rest
+readonly class PersistRest extends Rest
 {
   public function __construct(
     PersistRequest $request,
