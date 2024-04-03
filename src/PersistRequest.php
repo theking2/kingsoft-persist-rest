@@ -3,9 +3,9 @@ namespace Kingsoft\PersistRest;
 
 use Kingsoft\Http\Request;
 
-class PersistRequest extends Request
+readonly class PersistRequest extends Request
 {
-  public null|\ReflectionClass $resourceClass = null;
+  public \ReflectionClass $resourceClass;
   /**
    * Handle a GET request, if {id} is provided attempt to retrieve one, otherwise all.
    *
