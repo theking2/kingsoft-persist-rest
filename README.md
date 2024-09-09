@@ -40,16 +40,8 @@ try {
 }
 
 ```
+It is ofcourse possible to read the constructor parameters from a configuration file.
 
-Make sure to make the SETTINGS available with 
-```ini
-[api]
-namespace = Namespace
-maxresults = 10
-allowedorigin = *
-allowedmethods = "OPTIONS,HEAD,GET,POST,PUT,DELETE"
-maxage = 60
-```
 # Add allowedendpoints
 ## Kingsoft persist-db
 To create the allowed endpoints with `Kingsoft\Persist-db` generate them with
