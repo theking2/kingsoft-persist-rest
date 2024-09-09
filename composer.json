@@ -16,7 +16,7 @@
     ],
     "minimum-stability": "RC",
     "require": {
-        "kingsoft/http": "^3.7.5",
+        "kingsoft/http": "^3.7.10",
         "kingsoft/persist": "^3.0",
         "psr/log": "^3.0",
         "kingsoft/db": "^2.7"
