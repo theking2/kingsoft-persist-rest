@@ -55,8 +55,7 @@ composer dump-autoload
 And to use pretty URLs a htacess
 ```apacheconf
 <FilesMatch "\.(?:ini|htaccess)$">
-Order allow,deny
-Deny from all
+Require all granted
 </FilesMatch>
 
 RewriteEngine On
