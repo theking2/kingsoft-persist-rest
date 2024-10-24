@@ -1,4 +1,4 @@
-# Kingsoft / Persis REST
+# Kingsoft / Persist REST
 
 This packege uses \Kingsoft\Http, \Kingsoft\PersistDb to expose all the tables and views discoverd by PersistDb `discover.php` and of those the ones added to the `allowedEndPoints` list. If it is not on that list the api will return a `404`. So
 other data is save. A table or view is accessible with, GET, POST, PUT, DELETE reqeests but those can also be restricted using `allowedMethods`. The reqeust follow the [rfc9205](https://www.rfc-editor.org/rfc/rfc9205.html) standard with some extensions.
@@ -60,6 +60,18 @@ Require all granted
 
 RewriteEngine On
 RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -f [OR]
+
+## nginx
+
+```
+# nginx configuration by winginx.com
+
+location ~ ^(.*)$ { }
+
+location / {
+  rewrite ^(.*)$ /api/index.php;
+}
+```
 RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -d
 RewriteRule ^ - [L]
 RewriteRule ^ /api/index.php
