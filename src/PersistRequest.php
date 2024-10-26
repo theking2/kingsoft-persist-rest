@@ -14,7 +14,7 @@ readonly class PersistRequest extends Request
    */
   protected function getNamespace(): string
   {
-    return SETTINGS['api']['namespace'];
+    return SETTINGS[ 'api' ][ 'namespace' ];
   }
 
   public function __construct(
@@ -50,5 +50,17 @@ readonly class PersistRequest extends Request
 
       return false;
     }
+  }
+  public function newResource( mixed ...$args ): object
+  {
+    return $this->resourceClass->newInstance( $args );
+  }
+  public function getResourceMethod( string $name ): \ReflectionMethod
+  {
+    return $this->resourceClass->getMethod( $name );
+  }
+  public function getResourceClass(): \ReflectionClass
+  {
+    return $this->resourceClass;
   }
 }
