@@ -20,12 +20,14 @@ readonly class PersistRequest extends Request
   public function __construct(
     array $allowedEndpoints,
     string $allowedMethods = 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
-    string $allowedOrigin = '*'
+    string $allowedOrigin = '*',
+    int $skipParts = 0
   ) {
     parent::__construct(
       $allowedEndpoints,
       $allowedMethods,
       $allowedOrigin,
+      $skipParts
     );
   }
   protected function isResourceValid(): bool
