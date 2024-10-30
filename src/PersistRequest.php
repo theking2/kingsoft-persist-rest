@@ -53,7 +53,7 @@ readonly class PersistRequest extends Request
   }
   public function newResource( mixed ...$args ): object
   {
-    return $this->resourceClass->newInstance( $args );
+    return $this->resourceClass->newInstance( $args[0] );
   }
   public function getResourceMethod( string $name ): \ReflectionMethod
   {
