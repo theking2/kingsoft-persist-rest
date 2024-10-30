@@ -19,6 +19,8 @@ readonly class PersistRest extends Rest
   ) {
     parent::__construct( $request, $logger );
   }
+
+  // #MARK: Exceptions
   /**
    * Create a JSON string from an exception
    *
@@ -44,6 +46,8 @@ readonly class PersistRest extends Rest
       'message' => $e->getMessage(),
     ] );
   }
+
+  // #MARK: Resource handling
   /**
    * Get a resource by id
    * @return PersistBase
@@ -77,7 +81,7 @@ readonly class PersistRest extends Rest
       exit();
     }
   }
-  /* #region GET */
+  // #MARK: Methods get
   public function get(): void
   {
     try {
@@ -224,10 +228,8 @@ readonly class PersistRest extends Rest
   {
     $this->getResourceList( $this->request->getResourceMethod( "findall" )->invoke( null ) );
   }
-  /* #endregion */
 
-  /* #region POST */
-
+  // #MARK: Methods post
   /**
    * post
    *
@@ -267,9 +269,7 @@ readonly class PersistRest extends Rest
     }
   }
 
-  /* #endregion */
-
-  /* #region PUT */
+  // #MARK: Methods put
 
   /**
    * put
@@ -310,9 +310,17 @@ readonly class PersistRest extends Rest
     }
   }
 
-  /* #endregion */
+  /**
+   * Summary of patch, do a put
+   */
+  public function patch(): void
+  {
+    $this->put();
+  }
 
-  /* #region DELETE */
+
+  // #MARK: Methods delete
+
   /**
    * delete
    *
@@ -339,9 +347,7 @@ readonly class PersistRest extends Rest
     }
   }
 
-  /* #endregion */
-
-  /* #region HEAD */
+  // #MARK: Methods head
 
   /**
    * head
@@ -374,15 +380,4 @@ readonly class PersistRest extends Rest
     exit();
   }
 
-  /* #endregion */
-
-  /* #region PATCH */
-  /**
-   *
-   */
-  public function patch(): void
-  {
-    $this->put();
-  }
-  /* #endregion */
 }
