@@ -279,6 +279,7 @@ readonly class PersistRest extends Rest
    */
   public function put(): void
   {
+    try {
     /** @var \Kingsoft\Persist\Base $resourceObject */
     if( $resourceObject = $this->getResource() ) {
 
@@ -298,6 +299,15 @@ readonly class PersistRest extends Rest
       Response::sendMessage( 'error', 0, 'Internal error' );
 
     }
+        } catch ( \Exception $e ) {
+      $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
+
+      Response::sendStatusCode( StatusCode::BadRequest );
+      Response::sendMessage(
+        StatusCode::toString( StatusCode::BadRequest ),
+        StatusCode::BadRequest->value,
+        "Could nor process request, {$e->getMessage()}" );
+    }
   }
 
   /* #endregion */
@@ -311,11 +321,21 @@ readonly class PersistRest extends Rest
    */
   public function delete(): void
   {
+    try {
     /**@var \Kingsoft\Persist\Db\DBPersistTrait $resourceObject */
     if( $resourceObject = $this->getResource() ) {
       Response::sendStatusCode( StatusCode::OK );
       $payload = [ 'id' => $resourceObject->getKeyValue(), 'result' => $resourceObject->delete() ];
       Response::sendPayLoad( $payload );
+    }
+        } catch ( \Exception $e ) {
+      $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
+
+      Response::sendStatusCode( StatusCode::BadRequest );
+      Response::sendMessage(
+        StatusCode::toString( StatusCode::BadRequest ),
+        StatusCode::BadRequest->value,
+        "Could nor process request, {$e->getMessage()}" );
     }
   }
 
@@ -331,6 +351,7 @@ readonly class PersistRest extends Rest
    */
   public function head(): void
   {
+    try {
     if( $resourceObject = $this->getResource() ) {
       $null = null;
       if( isset( $_SERVER[ 'HTTP_IF_NONE_MATCH' ] ) and $_SERVER[ 'HTTP_IF_NONE_MATCH' ] == $resourceObject->getStateHash() ) {
@@ -339,6 +360,15 @@ readonly class PersistRest extends Rest
       }
       Response::sendStatusCode( StatusCode::NoContent );
       Response::sendPayload( $null, [ $resourceObject, "getStateHash" ] );
+    }
+          } catch ( \Exception $e ) {
+      $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
+
+      Response::sendStatusCode( StatusCode::BadRequest );
+      Response::sendMessage(
+        StatusCode::toString( StatusCode::BadRequest ),
+        StatusCode::BadRequest->value,
+        "Could nor process request, {$e->getMessage()}" );
     }
     Response::sendStatusCode( StatusCode::NotFound );
     exit();
