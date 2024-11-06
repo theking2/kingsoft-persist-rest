@@ -1,0 +1,19 @@
+{
+    "require": {
+      "php": ">=8.1.0",
+      "psr/log":"^3.0",
+      "monolog/monolog":"^3.5",
+      "kingsoft/monolog-handler":"^1.0",
+      "kingsoft/utils":"^2.7",
+      "kingsoft/db": "^2.7",
+      "kingsoft/persist": "^3.2",
+      "kingsoft/persist-db": "^2.8",
+      "kingsoft/http": "^3.7",
+      "kingsoft/persist-rest": "^2.8"
+    },
+    "autoload": {
+      "psr-4": {
+        "TestSpace\\": "./classes/TestSpace/"
+      }
+    }
+  }
