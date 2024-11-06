@@ -127,6 +127,9 @@ readonly class PersistRest extends Rest
     }
 
   }
+
+  // #MARK: Methods getMany
+  
   /**
    * Get multiple records by criteria
    *
@@ -280,26 +283,25 @@ readonly class PersistRest extends Rest
   public function put(): void
   {
     try {
-    /** @var \Kingsoft\Persist\Base $resourceObject */
-    if( $resourceObject = $this->getResource() ) {
+      if( $resourceObject = $this->getResource() ) {
 
-      $input = json_decode( file_get_contents( 'php://input' ), true );
-      $resourceObject->setFromArray( $input );
+        $input = json_decode( file_get_contents( 'php://input' ), true );
+        $resourceObject->setFromArray( $input );
 
-      if( $result = $resourceObject->freeze() ) {
-        Response::sendStatusCode( StatusCode::OK );
-        $payload = [ 'id' => $resourceObject->getKeyValue(), 'result' => $result ];
-        Response::sendPayLoad( $payload, [ $resourceObject, "getStateHash" ] );
+        if( $result = $resourceObject->freeze() ) {
+          Response::sendStatusCode( StatusCode::OK );
+          $payload = [ 'id' => $resourceObject->getKeyValue(), 'result' => $result ];
+          Response::sendPayLoad( $payload, [ $resourceObject, "getStateHash" ] );
+
+        }
+
+        $this->logger->info( "Error in put", [ 'payload' => $input ] );
+
+        Response::sendStatusCode( StatusCode::InternalServerError );
+        Response::sendMessage( 'error', 0, 'Internal error' );
 
       }
-
-      $this->logger->info( "Error in put", [ 'payload' => $input ] );
-
-      Response::sendStatusCode( StatusCode::InternalServerError );
-      Response::sendMessage( 'error', 0, 'Internal error' );
-
-    }
-        } catch ( \Exception $e ) {
+    } catch ( \Exception $e ) {
       $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
@@ -330,13 +332,13 @@ readonly class PersistRest extends Rest
   public function delete(): void
   {
     try {
-    /**@var \Kingsoft\Persist\Db\DBPersistTrait $resourceObject */
-    if( $resourceObject = $this->getResource() ) {
-      Response::sendStatusCode( StatusCode::OK );
-      $payload = [ 'id' => $resourceObject->getKeyValue(), 'result' => $resourceObject->delete() ];
-      Response::sendPayLoad( $payload );
-    }
-        } catch ( \Exception $e ) {
+      /**@var \Kingsoft\Persist\Db\DBPersistTrait $resourceObject */
+      if( $resourceObject = $this->getResource() ) {
+        Response::sendStatusCode( StatusCode::OK );
+        $payload = [ 'id' => $resourceObject->getKeyValue(), 'result' => $resourceObject->delete() ];
+        Response::sendPayLoad( $payload );
+      }
+    } catch ( \Exception $e ) {
       $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
@@ -358,16 +360,16 @@ readonly class PersistRest extends Rest
   public function head(): void
   {
     try {
-    if( $resourceObject = $this->getResource() ) {
-      $null = null;
-      if( isset( $_SERVER[ 'HTTP_IF_NONE_MATCH' ] ) and $_SERVER[ 'HTTP_IF_NONE_MATCH' ] == $resourceObject->getStateHash() ) {
-        Response::sendStatusCode( StatusCode::NotModified );
+      if( $resourceObject = $this->getResource() ) {
+        $null = null;
+        if( isset( $_SERVER[ 'HTTP_IF_NONE_MATCH' ] ) and $_SERVER[ 'HTTP_IF_NONE_MATCH' ] == $resourceObject->getStateHash() ) {
+          Response::sendStatusCode( StatusCode::NotModified );
+          Response::sendPayload( $null, [ $resourceObject, "getStateHash" ] );
+        }
+        Response::sendStatusCode( StatusCode::NoContent );
         Response::sendPayload( $null, [ $resourceObject, "getStateHash" ] );
       }
-      Response::sendStatusCode( StatusCode::NoContent );
-      Response::sendPayload( $null, [ $resourceObject, "getStateHash" ] );
-    }
-          } catch ( \Exception $e ) {
+    } catch ( \Exception $e ) {
       $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
@@ -378,6 +380,16 @@ readonly class PersistRest extends Rest
     }
     Response::sendStatusCode( StatusCode::NotFound );
     exit();
+  }
+
+  // #MARK: Methods options
+
+  public function options(): void
+  {
+    Response::sendStatusCode( StatusCode::OK );
+    Response::sendContentType( ContentType::Json );
+    $payload = [ 'result' => 'options', 'message' => 'options' ];
+    Response::sendPayload( $payload );
   }
 
 }
