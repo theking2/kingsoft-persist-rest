@@ -15,7 +15,8 @@ readonly class PersistRest extends Rest
 {
   public function __construct(
     PersistRequest $request,
-    \Psr\Log\LoggerInterface $logger
+    \Psr\Log\LoggerInterface $logger,
+    readonly int $controlMaxAge = 86400
   ) {
     parent::__construct( $request, $logger );
   }
@@ -383,13 +384,18 @@ readonly class PersistRest extends Rest
   }
 
   // #MARK: Methods options
-
+  /**
+   * Handling the OPTION request for preflight
+   * Sending the allowed headers and exit
+   */
   public function options(): void
   {
-    Response::sendStatusCode( StatusCode::OK );
-    Response::sendContentType( ContentType::Json );
-    $payload = [ 'result' => 'options', 'message' => 'options' ];
-    Response::sendPayload( $payload );
+    $this->logger->info( "Handle OPTION" );
+    header( 'Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Origen, Access-Control-Request-Method, Origin' );
+    if( isset( $this->controlMaxAge ) )
+      header( 'Access-Control-Max-Age: ' . $this->controlMaxAge );
+    Response::sendStatusCode( StatusCode::NoContent );
+    exit;
   }
 
 }
