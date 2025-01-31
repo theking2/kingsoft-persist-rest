@@ -1,7 +1,9 @@
 # Kingsoft / Persist REST
 
-This packege uses \Kingsoft\Http, \Kingsoft\PersistDb to expose all the tables and views discoverd by PersistDb `discover.php` and of those the ones added to the `allowedEndPoints` list. If it is not on that list the api will return a `404`. So
-other data is save. A table or view is accessible with, GET, POST, PUT, DELETE reqeests but those can also be restricted using `allowedMethods`. The reqeust follow the [rfc9205](https://www.rfc-editor.org/rfc/rfc9205.html) standard with some extensions.
+This packege uses \Kingsoft\Http, \Kingsoft\PersistDb to expose all the tables and views discovered by PersistDb `discover.php` and of those the ones added to the `allowedEndPoints` list. If it is not on that list the api will return a `404`. So
+other data is save. A table or view is accessible with, GET, POST, PUT, DELETE reqeests but those can also be restricted using `allowedMethods`. The reqeust follow the [rfc9205](https://www.rfc-editor.org/rfc/rfc9205.html) standard with some extensions. This module is `CORS` complient and can allow or disallow certain methods and communicate that fact by properly responding to a `OPTION` request. The resulting service it `HATEOAS` enabled as it provides uris for pagination and other functions. 
+
+## Methods
 
  * POST `https://example.com/resource` will create a new record with the values specifed in the json payload. If the record has autoincrment true a new ID is created and returned (C)
  * GET `https://example.com/resource` gets a list of all resources restricted by `maxresults` (R)
@@ -11,16 +13,25 @@ other data is save. A table or view is accessible with, GET, POST, PUT, DELETE r
  * GET `https://example.com/resource?<key>=!<value>` gets all the recources where attribute `key` != `value`. (R)
  * GET `https://example.com/resource?<key>=U<value1>,<value2>` gets all the recources where attribute `key`  IN  (`value1`, `value2`) other operators are avaiable. See \Kingsoft\Persist for those (R)
  * PUT `https://example.com/resource/<id>` will set new values specifed in the json payload (U)
- * DELETE `https://example.com/resource/<id>` deletes the resource with the `id` specifie (D)
+ * DELETE `https://example.com/resource/<id>` deletes the resource with the `id` specified (D)
 
-So the interface creates a complete CRUD interface for all resources (tables, views) exposed. Remember however that views can not normally be updated. So make sure your views include the key for the _main_ underlying table. I have not found out a
-way to retrieve the underlying tables (on MySQL, MariaDB) so it is currently not possible to automate this 
-GET results are stored in a `resources` object in the json response allongside links and other messages to make a semi level 3. 
+So the interface creates a complete CRUD interface for all resources (tables, views) exposed. Tables and views can be discoverd using the "discover" feature from `\Kingsoft\Persist`. This will allow to have full access to tables and read access to views or even stored procedures if they produce a result set. 
+
+## Results
+
+GET results are stored in a `resources` object in the json response allongside links and other messages to make a semi level 3. The results can be a single or multiple objects up to the maximum set. The response will include the urls to implement a pagination.
+
+## HATEOAS
+
+Results contain URIs for pagination and other navigation.
+
+## Pre flight
 
 Pre-flight is handled by observing the OPTION method and returning the proper hints.
 
 
 ## Sample usage
+
 ```php
 
 use Kingsoft\Http\{StatusCode, Response};
