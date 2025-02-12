@@ -135,6 +135,10 @@ Require all granted
 
 RewriteEngine On
 RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -f [OR]
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -d
+RewriteRule ^ - [L]
+RewriteRule ^ /api/index.php
+```
 
 ## nginx
 
