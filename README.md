@@ -15,7 +15,7 @@ other data is save. A table or view is accessible with, GET, POST, PUT, DELETE r
  * PUT `https://example.com/resource/<id>` will set new values specifed in the json payload (U)
  * DELETE `https://example.com/resource/<id>` deletes the resource with the `id` specified (D)
 
-So the interface creates a complete CRUD interface for all resources (tables, views) exposed. Tables and views can be discoverd using the "discover" feature from `\Kingsoft\Persist`. This will allow to have full access to tables and read access to views or even stored procedures if they produce a result set. 
+So the facade creates a complete CRUD interface for all resources (tables, views) exposed. Tables and views can be discoverd using the "discover" feature from `\Kingsoft\Persist`. This will allow to have full access to tables and read access to views or even stored procedures if they produce a result set. 
 
 ## Results
 
