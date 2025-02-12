@@ -1,6 +1,6 @@
 # Kingsoft / Persist REST
 
-This packege uses \Kingsoft\Http, \Kingsoft\PersistDb to expose all the tables and views discovered by PersistDb `discover.php` and of those the ones added to the `allowedEndPoints` list. If it is not on that list the api will return a `404`. So
+This package uses \Kingsoft\Http, \Kingsoft\PersistDb to expose all the tables and views discovered by PersistDb `discover.php` and of those the ones added to the `allowedEndPoints` list. If it is not on that list the api will return a `404`. So
 other data is save. A table or view is accessible with, GET, POST, PUT, DELETE reqeests but those can also be restricted using `allowedMethods`. The reqeust follow the [rfc9205](https://www.rfc-editor.org/rfc/rfc9205.html) standard with some extensions. This module is `CORS` complient and can allow or disallow certain methods and communicate that fact by properly responding to a `OPTION` request. The resulting service it `HATEOAS` enabled as it provides uris for pagination and other functions. 
 
 ## Methods
