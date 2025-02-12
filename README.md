@@ -49,8 +49,63 @@ try {
 } catch ( Exception $e ) {
   Response::sendError( $e->getMessage(), StatusCode::InternalServerError->value );
 }
-
 ```
+
+# Discover
+
+To discover the tables (and views) in you database use this `discover.php` in order to create the class files for access. Make sure the DB connection is made in `config.php` and the `SETTINGS` global array constant is defined. The class `\Kingsoft\Db\Database` needs the following configuration:
+
+```php
+const SETTINGS = [ 
+    'api' => [ 
+        'namespace' => 'kingsoft\\api'
+    ],
+    'db'  => [ 
+        'hostname' => 'localhost',
+        'username' => 'root',
+        'password' => 'password',
+        'database' => 'database'
+    ]
+];
+```
+
+where `namespace` can be adjusted. Discovery can that commmence with:
+
+```php
+<?php declare(strict_types=1);
+
+require_once 'config/config.php';
+const ROOT = __DIR__ . '/';
+require 'vendor/autoload.php';
+
+use \Kingsoft\Persist\Db\Bootstrap;
+$bootstrap = new Bootstrap( SETTINGS['api']['namespace'] );
+$bootstrap->discover();
+```
+
+This will generate the fils in the discovery folder that can be copied to whereever you like as long as you update the `composer.json` file accordingly and issue a `composer dump-autoload` to re-read the class location. Example:
+
+```js
+{
+  "require": {
+    "php": "^8.1.0",
+    "psr/log":"^3.0.0",
+    "monolog/monolog":"3.5.0",
+    "kingsoft/monolog-handler":"^1.0.0",
+    "kingsoft/utils":"^2.7.0",
+    "kingsoft/persist-db": "^2.8.8",
+    "kingsoft/persist-rest": "^2.8.7"
+  },
+  "autoload": {
+    "psr-4": {
+      "Organisation\Application\\": "./classes/Organisation/Application/"
+    }
+  }
+}
+```
+
+after copying the result of `discovery.php` to the folder `classes/Organisation/Application/` 
+
 It is ofcourse possible to read the constructor parameters from a configuration file.
 
 # Add allowedendpoints
@@ -60,9 +115,11 @@ To create the allowed endpoints with `Kingsoft\Persist-db` generate them with
 Followed by these steps
  * Copy the allowedendpoints settings to the ini file and
  * Copy the psr-4 section to `composer.json`. After that make sure to reload the autoloader with
+ * 
 ```
 composer dump-autoload
 ```
+
 And to use pretty URLs a htacess
 ```apacheconf
 <FilesMatch "\.(?:ini|htaccess)$">
