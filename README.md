@@ -69,7 +69,7 @@ const SETTINGS = [
 ];
 ```
 
-where `namespace` can be adjusted. Discovery can that commmence with:
+where `namespace` can be adjusted. Discovery can than commence with:
 
 ```php
 <?php declare(strict_types=1);
