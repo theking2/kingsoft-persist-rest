@@ -27,7 +27,14 @@ Results contain URIs for pagination and other navigation.
 
 ## Pre flight
 
-Pre-flight is handled by observing the OPTION method and returning the proper hints.
+Pre-flight is handled by observing the OPTION method and returning the proper hints where the caching can be specified with the `[api][maxage]`setting:
+
+* Access-Control-Allow-Headers: Content-Type
+* Access-Control-Allow-Origen
+* Access-Control-Request-Method
+* Origin
+
+[CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS}
 
 
 ## Sample usage
