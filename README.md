@@ -34,7 +34,7 @@ Pre-flight is handled by observing the OPTION method and returning the proper hi
 * Access-Control-Request-Method
 * Origin
 
-[CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS}
+(CORS)[https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS]
 
 
 ## Sample usage
