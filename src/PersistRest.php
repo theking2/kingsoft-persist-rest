@@ -89,7 +89,7 @@ readonly class PersistRest extends Rest
       $result = [];
       if( $this->request->id ) {
         /* get one element by key */
-        $this->logger->info( "Get one", [ 'ressource' => $this->request->resource, 'id' => $this->request->id ] );
+        $this->logger->debug( "Get one", [ 'ressource' => $this->request->resource, 'id' => $this->request->id ] );
         $this->doGetOne();
       }
       if( isset( $this->request->query ) and is_array( $this->request->query ) ) {
@@ -97,7 +97,7 @@ readonly class PersistRest extends Rest
          * no key provided, return all or selection
          * paging would be nice here
          */
-        $this->logger->info( "Get many", [ 'ressource' => $this->request->resource, 'query' => $this->request->query ] );
+        $this->logger->debug( "Get many", [ 'ressource' => $this->request->resource, 'query' => $this->request->query ] );
         $this->doGetMany();
 
       }
@@ -105,7 +105,7 @@ readonly class PersistRest extends Rest
        * no key provided, return all
        * paging would be nice here
        */
-      $this->logger->info( "Get all", [ 'ressource' => $this->request->resource ] );
+      $this->logger->debug( "Get all", [ 'ressource' => $this->request->resource ] );
       $this->doGetAll();
     } catch ( \Exception $e ) {
       $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
@@ -379,7 +379,7 @@ readonly class PersistRest extends Rest
         Response::sendPayload( $null, [ $resourceObject, "getStateHash" ] );
       }
     } catch ( \Exception $e ) {
-      $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
+      $this->logger->error( "Exception in head()", [ 'ressource' => $this->request->resource ] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage(
