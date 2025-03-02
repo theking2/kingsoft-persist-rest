@@ -16,9 +16,9 @@ readonly class PersistRest extends Rest
   public function __construct(
     PersistRequest $request,
     \Psr\Log\LoggerInterface $logger,
-    readonly int $controlMaxAge = 86400
+    int $controlMaxAge = 86400
   ) {
-    parent::__construct( $request, $logger );
+    parent::__construct( $request, $logger, $controlMaxAge );
   }
 
   // #MARK: Exceptions
