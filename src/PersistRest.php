@@ -30,17 +30,17 @@ readonly class PersistRest extends Rest
    */
   protected function createExceptionBody( \Throwable $e ): string
   {
-    $this->logger->error( "Exception in PersistRest", [ 'exception' => $e->__toString() ] );
+    $this->logger->error( "Exception in PersistRest", ['exception' => $e->__toString()] );
     // don't reveal internal errors
     if( $e instanceof Kingsoft\DB\DatabaseException ) {
-      return json_encode( [ 
+      return json_encode( [
         'result'  => 'error',
         'code'    => $e->getCode(),
         'type'    => 'DatabaseException',
         'message' => 'Internal error'
       ] );
     }
-    return json_encode( [ 
+    return json_encode( [
       'result'  => 'error',
       'code'    => $e->getCode(),
       'type'    => get_class( $e ),
@@ -58,7 +58,7 @@ readonly class PersistRest extends Rest
   protected function getResource(): PersistBase
   {
     if( !isset( $this->request->id ) ) {
-      $this->logger->info( "Id not set", [ 'ressource' => $this->request->resource ] );
+      $this->logger->info( "Id not set", ['ressource' => $this->request->resource] );
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage( 'error', 0, 'No id provided' );
       trigger_error( "no id" );
@@ -68,11 +68,11 @@ readonly class PersistRest extends Rest
       return $resourceObject;
 
     } else {
-      $this->logger->info( "Not found", [ 'ressource' => $this->request->resource, 'id' => $this->request->id ?? '' ] );
+      $this->logger->info( "Not found", ['ressource' => $this->request->resource, 'id' => $this->request->id ?? ''] );
 
       Response::sendStatusCode( StatusCode::NotFound );
       Response::sendContentType( ContentType::Json );
-      $payload = [ 
+      $payload = [
         'result'   => 'error',
         'message'  => 'Resource not found',
         'resource' => $this->request->resource,
@@ -89,7 +89,7 @@ readonly class PersistRest extends Rest
       $result = [];
       if( $this->request->id ) {
         /* get one element by key */
-        $this->logger->debug( "Get one", [ 'ressource' => $this->request->resource, 'id' => $this->request->id ] );
+        $this->logger->debug( "Get one", ['ressource' => $this->request->resource, 'id' => $this->request->id] );
         $this->doGetOne();
       }
       if( isset( $this->request->query ) and is_array( $this->request->query ) ) {
@@ -97,7 +97,7 @@ readonly class PersistRest extends Rest
          * no key provided, return all or selection
          * paging would be nice here
          */
-        $this->logger->debug( "Get many", [ 'ressource' => $this->request->resource, 'query' => $this->request->query ] );
+        $this->logger->debug( "Get many", ['ressource' => $this->request->resource, 'query' => $this->request->query] );
         $this->doGetMany();
 
       }
@@ -105,10 +105,10 @@ readonly class PersistRest extends Rest
        * no key provided, return all
        * paging would be nice here
        */
-      $this->logger->debug( "Get all", [ 'ressource' => $this->request->resource ] );
+      $this->logger->debug( "Get all", ['ressource' => $this->request->resource] );
       $this->doGetAll();
     } catch ( \Exception $e ) {
-      $this->logger->error( "Exception in get()", [ 'ressource' => $this->request->resource ] );
+      $this->logger->error( "Exception in get()", ['ressource' => $this->request->resource] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage(
@@ -127,13 +127,13 @@ readonly class PersistRest extends Rest
     if( $resourceObject = $this->getResource() ) {
       Response::sendStatusCode( StatusCode::OK );
       $payload = $resourceObject->getArrayCopy();
-      Response::sendPayload( $payload, [ $resourceObject, "getStateHash" ] );
+      Response::sendPayload( $payload, [$resourceObject, "getStateHash"] );
     }
 
   }
 
   // #MARK: Methods getMany
-  
+
   /**
    * Get multiple records by criteria
    *
@@ -154,7 +154,7 @@ readonly class PersistRest extends Rest
     foreach( $resourceGenerator as $resourceObject ) {
       // Skip until offset
       if( ( $offset-- ) > 0 ) {
-        $this->logger->debug( 'skipping...', [ 'offset' => $offset ] );
+        $this->logger->debug( 'skipping...', ['offset' => $offset] );
         continue;
       }
       if( !$row_count-- ) {
@@ -165,54 +165,56 @@ readonly class PersistRest extends Rest
       $keys[]    = $resourceObject->getKeyValue();
     }
 
-    if( count( $keys ) ) {
-      $count = count( $keys );
-      Response::sendStatusCode( StatusCode::OK );
+    $count = count( $keys );
+    Response::sendStatusCode( StatusCode::OK );
+    if( $count > 0 ) {
       // Here we should allow for paging
-      header( 'Content-Range: keys ' . $keys[ 0 ] . '-' . $keys[ $count - 1 ] );
-      $nextPageOffset = $this->request->offset + $this->request->limit;
-      $prevPageOffset = $this->request->offset - $this->request->limit;
-      $queryArray     = [];
-      foreach( $this->request->query as $field => $constraint ) {
-        $queryArray[] = $field . '=' . substr( $constraint, 1 );
-      }
-      $this->logger->debug( 'Query', [ 'queryArray' => $queryArray ] );
-
-      $query = implode( '&', $queryArray );
-      if( $query ) {
-        $query = "?$query";
-      }
-      $payload = [ 
-        'partial'   => $partial,
-        'first'     => $keys[ 0 ],
-        'last'      => $keys[ $count - 1 ],
-        'count'     => count( $keys ),
-        'links'     => [ 
-          [ 
-            'name'   => 'single',
-            'href'   => ( isset( $_SERVER[ 'HTTPS' ] ) ? 'https://' : 'http://' ) . $_SERVER[ 'SERVER_NAME' ] . '/' . $this->request->resource . '/${id}',
-            'method' => 'GET'
-          ],
-          [ 
-            'name'   => 'prev-page',
-            'href'   => ( isset( $_SERVER[ 'HTTPS' ] ) ? 'https://' : 'http://' ) . $_SERVER[ 'SERVER_NAME' ] . '/' . $this->request->resource . "[{$prevPageOffset},{$count}]" . $query,
-            'method' => 'GET'
-          ],
-          [ 
-            'name'   => 'next-page',
-            'href'   => ( isset( $_SERVER[ 'HTTPS' ] ) ? 'https://' : 'http://' ) . $_SERVER[ 'SERVER_NAME' ] . '/' . $this->request->resource . "[{$nextPageOffset},{$count}]" . $query,
-            'method' => 'GET'
-          ]
-        ],
-        'resources' => $records
-      ];
-      Response::sendPayload( $payload ); //exits
+      header( 'Content-Range: keys ' . $keys[ 0 ] . '-' . $keys[$count - 1] );
+      $first = $keys[ 0 ];
+      $last  = $keys[$count - 1];
+    } else {
+      $first = null;
+      $last  = null;
     }
+    $nextPageOffset = $this->request->offset + $this->request->limit;
+    $prevPageOffset = $this->request->offset - $this->request->limit;
+    $queryArray     = [];
+    foreach( $this->request->query as $field => $constraint ) {
+      $queryArray[] = $field . '=' . substr( $constraint, 1 );
+    }
+    $this->logger->debug( 'Query', ['queryArray' => $queryArray] );
 
-    Response::sendStatusCode( StatusCode::NoContent );
-    $payload = [ 'result' => 'none', 'message' => 'No records found' ];
+    $query = implode( '&', $queryArray );
+    if( $query ) {
+      $query = "?$query";
+    }
+    $payload = [
+      'partial'   => $partial,
+      'first'     => $first,
+      'last'      => $last,
+      'count'     => $count,
+      'links'     => [
+        [
+          'name'   => 'single',
+          'href'   => ( isset( $_SERVER[ 'HTTPS' ] ) ? 'https://' : 'http://' ) . $_SERVER[ 'SERVER_NAME' ] . '/' . $this->request->resource . '/${id}',
+          'method' => 'GET'
+        ],
+        [
+          'name'   => 'prev-page',
+          'href'   => ( isset( $_SERVER[ 'HTTPS' ] ) ? 'https://' : 'http://' ) . $_SERVER[ 'SERVER_NAME' ] . '/' . $this->request->resource . "[{$prevPageOffset},{$row_count}]" . $query,
+          'method' => 'GET'
+        ],
+        [
+          'name'   => 'next-page',
+          'href'   => ( isset( $_SERVER[ 'HTTPS' ] ) ? 'https://' : 'http://' ) . $_SERVER[ 'SERVER_NAME' ] . '/' . $this->request->resource . "[{$nextPageOffset},{$row_count}]" . $query,
+          'method' => 'GET'
+        ]
+      ],
+      'resources' => $records
+    ];
     Response::sendPayload( $payload ); //exits
   }
+
   /**
    * dogetMany - get multiple records by criteria up to MAXROWS
    *
@@ -222,7 +224,7 @@ readonly class PersistRest extends Rest
   {
     $where = [];
     foreach( $this->request->query as $key => $value ) {
-      $where[ $key ] = urldecode( $value );
+      $where[$key] = urldecode( $value );
     }
     $this->getResourceList( $this->request->getResourceMethod( "findall" )->invoke( null, $where, ) );
   }
@@ -252,23 +254,23 @@ readonly class PersistRest extends Rest
 
       $resourceObject = $this->request->getResourceMethod( "createFromArray" )->invoke( null, $input );
 
-      $this->logger->info( "Post", [ 'resource' => $this->request->resource, 'payload' => $input ] );
+      $this->logger->info( "Post", ['resource' => $this->request->resource, 'payload' => $input] );
       if( $resourceObject->freeze() ) {
         Response::sendStatusCode( StatusCode::OK );
-        $payload = [ 
+        $payload = [
           'result'  => 'created',
           'message' => '',
           'id'      => $resourceObject->getKeyValue(),
-          'ETag'    => $resourceObject->getStateHash() ];
-        Response::sendPayload( $payload, [ $resourceObject, "getStateHash" ] );
+          'ETag'    => $resourceObject->getStateHash()];
+        Response::sendPayload( $payload, [$resourceObject, "getStateHash"] );
       }
 
-      $this->logger->info( "Error in post", [ 'payload' => $input ] );
+      $this->logger->info( "Error in post", ['payload' => $input] );
 
       Response::sendStatusCode( StatusCode::InternalServerError );
       Response::sendMessage( 'error', 0, 'Internal error' );
     } catch ( \Exception $e ) {
-      $this->logger->error( "Exception in post()", [ 'ressource' => $this->request->resource ] );
+      $this->logger->error( "Exception in post()", ['ressource' => $this->request->resource] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage(
@@ -294,22 +296,22 @@ readonly class PersistRest extends Rest
         $input = json_decode( file_get_contents( 'php://input' ), true );
         $resourceObject->setFromArray( $input );
 
-        $this->logger->info( "Put", [ 'resource' => $this->request->resource, 'id' => $resourceObject->getKeyValue(), 'payload' => $input ] );
+        $this->logger->info( "Put", ['resource' => $this->request->resource, 'id' => $resourceObject->getKeyValue(), 'payload' => $input] );
         if( $result = $resourceObject->freeze() ) {
           Response::sendStatusCode( StatusCode::OK );
-          $payload = [ 'id' => $resourceObject->getKeyValue(), 'result' => $result ];
-          Response::sendPayLoad( $payload, [ $resourceObject, "getStateHash" ] );
+          $payload = ['id' => $resourceObject->getKeyValue(), 'result' => $result];
+          Response::sendPayLoad( $payload, [$resourceObject, "getStateHash"] );
 
         }
 
-        $this->logger->info( "Error in put", [ 'payload' => $input ] );
+        $this->logger->info( "Error in put", ['payload' => $input] );
 
         Response::sendStatusCode( StatusCode::InternalServerError );
         Response::sendMessage( 'error', 0, 'Internal error' );
 
       }
     } catch ( \Exception $e ) {
-      $this->logger->error( "Exception in put()", [ 'resource' => $this->request->resource ] );
+      $this->logger->error( "Exception in put()", ['resource' => $this->request->resource] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage(
@@ -342,13 +344,13 @@ readonly class PersistRest extends Rest
       /**@var \Kingsoft\Persist\Db\DBPersistTrait $resourceObject */
       if( $resourceObject = $this->getResource() ) {
         Response::sendStatusCode( StatusCode::OK );
-        
-        $this->logger->info( "Delete", [ 'resource' => $this->request->resource, 'id' => $resourceObject->getKeyValue() ] );
-        $payload = [ 'id' => $resourceObject->getKeyValue(), 'result' => $resourceObject->delete() ];
+
+        $this->logger->info( "Delete", ['resource' => $this->request->resource, 'id' => $resourceObject->getKeyValue()] );
+        $payload = ['id' => $resourceObject->getKeyValue(), 'result' => $resourceObject->delete()];
         Response::sendPayLoad( $payload );
       }
     } catch ( \Exception $e ) {
-      $this->logger->error( "Exception in delete()", [ 'ressource' => $this->request->resource ] );
+      $this->logger->error( "Exception in delete()", ['ressource' => $this->request->resource] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage(
@@ -373,13 +375,13 @@ readonly class PersistRest extends Rest
         $null = null;
         if( isset( $_SERVER[ 'HTTP_IF_NONE_MATCH' ] ) and $_SERVER[ 'HTTP_IF_NONE_MATCH' ] == $resourceObject->getStateHash() ) {
           Response::sendStatusCode( StatusCode::NotModified );
-          Response::sendPayload( $null, [ $resourceObject, "getStateHash" ] );
+          Response::sendPayload( $null, [$resourceObject, "getStateHash"] );
         }
         Response::sendStatusCode( StatusCode::NoContent );
-        Response::sendPayload( $null, [ $resourceObject, "getStateHash" ] );
+        Response::sendPayload( $null, [$resourceObject, "getStateHash"] );
       }
     } catch ( \Exception $e ) {
-      $this->logger->error( "Exception in head()", [ 'ressource' => $this->request->resource ] );
+      $this->logger->error( "Exception in head()", ['ressource' => $this->request->resource] );
 
       Response::sendStatusCode( StatusCode::BadRequest );
       Response::sendMessage(
