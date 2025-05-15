@@ -15,7 +15,7 @@ readonly class PersistRest extends Rest
 {
   public function __construct(
     PersistRequest $request,
-    \Psr\Log\LoggerInterface $logger,
+    \Psr\Log\LoggerInterface $logger = new \Psr\Log\NullLogger,
     int $controlMaxAge = 86400
   ) {
     parent::__construct( $request, $logger, $controlMaxAge );
