@@ -1,1 +1,1 @@
-{"version":2,"defects":[],"times":{"Kingsoft\\PersistRest\\TestRequest::testRequest":0.002}}
+{"version":2,"defects":{"Kingsoft\\PersistRest\\InvalidPKTest::testResourceWithEmptyPrimaryKeyThrowsException":7},"times":{"Kingsoft\\PersistRest\\TestRequest::testRequest":0.002,"Kingsoft\\PersistRest\\InvalidPKTest::testResourceWithEmptyPrimaryKeyThrowsException":0.006,"Kingsoft\\PersistRest\\InvalidPKTest::testResourceWithValidPrimaryKeyWorks":0}}
