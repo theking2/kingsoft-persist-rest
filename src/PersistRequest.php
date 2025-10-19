@@ -42,6 +42,22 @@ readonly class PersistRequest extends Request
         $fullyQualifiedResourceClass
       );
       $resourceInstance            = $this->resourceClass->newInstance();
+      
+      // Validate that the resource has a valid primary key
+      if( $this->resourceClass->hasMethod( 'getPrimaryKey' ) ) {
+        $primaryKey = $this->resourceClass->getMethod( 'getPrimaryKey' )->invoke( null );
+        if( empty( $primaryKey ) || !is_string( $primaryKey ) || trim( $primaryKey ) === '' ) {
+          $this->logger->error( 
+            'Resource has invalid primary key', 
+            [ 'resource' => $fullyQualifiedResourceClass, 'primaryKey' => $primaryKey ] 
+          );
+          throw new \InvalidArgumentException( 
+            "Resource '{$this->resource}' does not have a valid primary key. " .
+            "Primary key cannot be empty. Please check the table structure and regenerate the resource class." 
+          );
+        }
+      }
+      
       unset( $resourceInstance );
       $this->logger->debug( 'Instantiated resourceObject successful', [ 'resource' => $fullyQualifiedResourceClass ] );
 
