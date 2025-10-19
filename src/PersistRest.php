@@ -135,6 +135,30 @@ readonly class PersistRest extends Rest
   // #MARK: Methods getMany
 
   /**
+   * Build the base URL including protocol, host and port
+   *
+   * @return string
+   */
+  private function getBaseUrl(): string
+  {
+    $protocol = isset( $_SERVER[ 'HTTPS' ] ) && $_SERVER[ 'HTTPS' ] !== 'off' ? 'https://' : 'http://';
+    $host     = $_SERVER[ 'SERVER_NAME' ] ?? $_SERVER[ 'HTTP_HOST' ] ?? 'localhost';
+    
+    // Get port with validation
+    $portValue   = $_SERVER[ 'SERVER_PORT' ] ?? 80;
+    $port        = filter_var( $portValue, FILTER_VALIDATE_INT, [ 'options' => [ 'min_range' => 1, 'max_range' => 65535 ] ] );
+    if( $port === false ) {
+      $port = 80; // fallback to default HTTP port if invalid
+    }
+    
+    // Only include port if it's not the default port for the protocol
+    $defaultPort = ( $protocol === 'https://' ) ? 443 : 80;
+    $portPart    = ( $port !== $defaultPort ) ? ':' . $port : '';
+    
+    return $protocol . $host . $portPart;
+  }
+
+  /**
    * Get multiple records by criteria
    *
    * @return void
@@ -176,11 +200,16 @@ readonly class PersistRest extends Rest
       $first = null;
       $last  = null;
     }
-    $nextPageOffset = $this->request->offset + $this->request->limit;
-    $prevPageOffset = $this->request->offset - $this->request->limit;
-    $queryArray     = [];
-    foreach( $this->request->query as $field => $constraint ) {
-      $queryArray[] = $field . '=' . substr( $constraint, 1 );
+    
+    // Get the maxresults setting for pagination
+    $maxResults = SETTINGS[ 'api' ][ 'maxresults' ] ?? 10;
+    
+    // Build query string for pagination links
+    $queryArray = [];
+    if( $this->request->query !== null && is_array( $this->request->query ) ) {
+      foreach( $this->request->query as $field => $constraint ) {
+        $queryArray[] = $field . '=' . substr( $constraint, 1 );
+      }
     }
     $this->logger->debug( 'Query', ['queryArray' => $queryArray] );
 
@@ -188,6 +217,14 @@ readonly class PersistRest extends Rest
     if( $query ) {
       $query = "?$query";
     }
+    
+    // Calculate pagination using actual start offset and maxresults
+    $nextPageOffset = $this->request->offset + $maxResults;
+    $prevPageOffset = max( 0, $this->request->offset - $maxResults );
+    
+    // Get the base URL with protocol, host, and port
+    $baseUrl = $this->getBaseUrl();
+    
     $payload = [
       'partial'   => $partial,
       'first'     => $first,
@@ -196,17 +233,17 @@ readonly class PersistRest extends Rest
       'links'     => [
         [
           'name'   => 'single',
-          'href'   => ( isset( $_SERVER[ 'HTTPS' ] ) ? 'https://' : 'http://' ) . $_SERVER[ 'SERVER_NAME' ] . '/' . $this->request->resource . '/${id}',
+          'href'   => $baseUrl . '/' . $this->request->resource . '/${id}',
           'method' => 'GET'
         ],
         [
           'name'   => 'prev-page',
-          'href'   => ( isset( $_SERVER[ 'HTTPS' ] ) ? 'https://' : 'http://' ) . $_SERVER[ 'SERVER_NAME' ] . '/' . $this->request->resource . "[{$prevPageOffset},{$row_count}]" . $query,
+          'href'   => $baseUrl . '/' . $this->request->resource . "[{$prevPageOffset},{$maxResults}]" . $query,
           'method' => 'GET'
         ],
         [
           'name'   => 'next-page',
-          'href'   => ( isset( $_SERVER[ 'HTTPS' ] ) ? 'https://' : 'http://' ) . $_SERVER[ 'SERVER_NAME' ] . '/' . $this->request->resource . "[{$nextPageOffset},{$row_count}]" . $query,
+          'href'   => $baseUrl . '/' . $this->request->resource . "[{$nextPageOffset},{$maxResults}]" . $query,
           'method' => 'GET'
         ]
       ],
