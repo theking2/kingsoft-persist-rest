@@ -60,6 +60,8 @@ try {
 
 To discover the tables (and views) in you database use this `discover.php` in order to create the class files for access. Make sure the DB connection is made in `config.php` and the `SETTINGS` global array constant is defined. The class `\Kingsoft\Db\Database` needs the following configuration:
 
+**Important:** All tables must have a valid primary key defined. Tables without a primary key will cause an `InvalidArgumentException` to be thrown during request validation. If you need to work with tables that don't have a primary key, you must first add one to the table structure before running discovery.
+
 ```php
 const SETTINGS = [ 
     'api' => [ 
