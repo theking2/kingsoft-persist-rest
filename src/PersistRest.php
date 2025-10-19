@@ -143,11 +143,11 @@ readonly class PersistRest extends Rest
   {
     $protocol = isset( $_SERVER[ 'HTTPS' ] ) && $_SERVER[ 'HTTPS' ] !== 'off' ? 'https://' : 'http://';
     $host     = $_SERVER[ 'SERVER_NAME' ] ?? $_SERVER[ 'HTTP_HOST' ] ?? 'localhost';
-    $port     = $_SERVER[ 'SERVER_PORT' ] ?? 80;
+    $port     = (int) ( $_SERVER[ 'SERVER_PORT' ] ?? 80 );
     
     // Only include port if it's not the default port for the protocol
     $defaultPort = ( $protocol === 'https://' ) ? 443 : 80;
-    $portPart    = ( $port != $defaultPort ) ? ':' . $port : '';
+    $portPart    = ( $port !== $defaultPort ) ? ':' . $port : '';
     
     return $protocol . $host . $portPart;
   }
@@ -200,8 +200,10 @@ readonly class PersistRest extends Rest
     
     // Build query string for pagination links
     $queryArray = [];
-    foreach( $this->request->query as $field => $constraint ) {
-      $queryArray[] = $field . '=' . substr( $constraint, 1 );
+    if( is_array( $this->request->query ) ) {
+      foreach( $this->request->query as $field => $constraint ) {
+        $queryArray[] = $field . '=' . substr( $constraint, 1 );
+      }
     }
     $this->logger->debug( 'Query', ['queryArray' => $queryArray] );
 
